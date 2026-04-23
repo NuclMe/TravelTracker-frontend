@@ -1,10 +1,10 @@
-import React from 'react';
-import TripList from './TripList';
+import React from 'react'
+import TripsContainer from './TripsContainer'
 
 export default function Dashboard() {
   return (
     <div>
-      <TripList />
+      <TripsContainer />
     </div>
-  );
+  )
 }

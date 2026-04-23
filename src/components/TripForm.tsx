@@ -1,3 +1,4 @@
+import { useState, type ChangeEvent } from 'react'
 import { useFormik } from 'formik'
 import {
   FormControl,
@@ -10,7 +11,6 @@ import {
 } from '@mui/material'
 import useMediaQuery from '@mui/material/useMediaQuery'
 import { useTheme } from '@mui/material/styles'
-import { useXMLHttpService, MultiFileUpload } from 'mui-file-upload'
 import { useCreateTripMutation } from '../redux/tripsApi'
 
 type TripFormProps = {
@@ -28,7 +28,7 @@ type TripFormValues = {
 }
 
 export default function TripForm({ open, handleClose }: TripFormProps) {
-  const uploadService = useXMLHttpService()
+  const [selectedPhotos, setSelectedPhotos] = useState<File[]>([])
   const [createTrip, { isLoading }] = useCreateTripMutation()
 
   const formik = useFormik({
@@ -38,6 +38,7 @@ export default function TripForm({ open, handleClose }: TripFormProps) {
       startDate: '',
       endDate: '',
       places: [],
+      photos: [],
       budget: '',
     } as TripFormValues,
     onSubmit: async (values, helpers) => {
@@ -50,9 +51,11 @@ export default function TripForm({ open, handleClose }: TripFormProps) {
           startDate: values.startDate,
           endDate: values.endDate,
           budget: Number(values.budget) || 0,
+          photos: selectedPhotos,
         }).unwrap()
 
         helpers.resetForm()
+        setSelectedPhotos([])
         handleClose()
       } catch (error) {
         const message =
@@ -65,8 +68,23 @@ export default function TripForm({ open, handleClose }: TripFormProps) {
   const theme = useTheme()
   const fullScreen = useMediaQuery(theme.breakpoints.down('md'))
 
+  const handlePhotoChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(event.target.files ?? [])
+    setSelectedPhotos(files)
+  }
+
+  const handleCloseDialog = () => {
+    setSelectedPhotos([])
+    handleClose()
+  }
+
   return (
-    <Dialog fullWidth open={open} onClose={handleClose} fullScreen={fullScreen}>
+    <Dialog
+      fullWidth
+      open={open}
+      onClose={handleCloseDialog}
+      fullScreen={fullScreen}
+    >
       <DialogTitle>New Trip</DialogTitle>
       <Box component="form" onSubmit={formik.handleSubmit}>
         <FormControl sx={{ px: 3, pt: 1, pb: 2 }}>
@@ -135,12 +153,27 @@ export default function TripForm({ open, handleClose }: TripFormProps) {
             }}
           />
         </FormControl>
-        <Box sx={{ margin: '0 20px 20px 20px' }}>
-          <MultiFileUpload
-            acceptsOnly="image/*"
-            acceptsOnly=".jpg,.jpeg,.png,.webp"
-            uploadService={uploadService}
-          />
+        <Box sx={{ px: 3, pb: 2 }}>
+          <Button component="label" variant="outlined">
+            Upload photos
+            <input
+              hidden
+              type="file"
+              accept="image/*,.jpg,.jpeg,.png,.webp"
+              multiple
+              onChange={handlePhotoChange}
+            />
+          </Button>
+          <Typography variant="body2" sx={{ mt: 1 }} color="text.secondary">
+            {selectedPhotos.length > 0
+              ? `${selectedPhotos.length} photo(s) selected`
+              : 'JPG, PNG or WebP images'}
+          </Typography>
+          {selectedPhotos.length > 0 && (
+            <Typography variant="body2" sx={{ mt: 1 }}>
+              {selectedPhotos.map((file) => file.name).join(', ')}
+            </Typography>
+          )}
         </Box>
         {typeof formik.status === 'string' && (
           <Typography color="error" sx={{ px: 3, pb: 1 }}>
